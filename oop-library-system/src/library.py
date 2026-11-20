@@ -36,6 +36,11 @@ class Library:
         book = self.books[book_id]
         member = self.members[member_id]
 
+        # Validate both constraints before updating either object.
+        if not book.is_available():
+            raise ValueError("Book is not available")
+        if len(member.borrowed_books) >= 3:
+            raise ValueError("Borrow limit reached")
         book.borrow()
         member.borrow_book(book_id)
 
