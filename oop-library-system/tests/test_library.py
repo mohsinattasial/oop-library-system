@@ -41,6 +41,17 @@ class TestLibrary(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.library.borrow_book("M1","4",date.today())
 
+
+    def test_borrow_limit_does_not_mark_extra_book_as_borrowed(self):
+        for book_id in ("2", "3", "4"):
+            self.library.add_book(book_id, book_id, "Test Author")
+        for book_id in ("1", "2", "3"):
+            self.library.borrow_book("M1", book_id, date.today())
+        with self.assertRaises(ValueError):
+            self.library.borrow_book("M1", "4", date.today())
+        self.assertTrue(self.library.books["4"].is_available())
+        self.assertNotIn("4", self.library.members["M1"].borrowed_books)
+
     def test_invalid_member(self):
 
         with self.assertRaises(KeyError):
