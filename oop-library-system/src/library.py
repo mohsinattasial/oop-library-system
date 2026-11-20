@@ -58,21 +58,25 @@ class Library:
         book = self.books[book_id]
         member = self.members[member_id]
 
+        # Find an active record before changing any domain object.
+        record = next(
+            (
+                item for item in reversed(self.records)
+                if item.member_id == member_id
+                and item.book_id == book_id
+                and item.return_date is None
+            ),
+            None,
+        )
+        if record is None or book_id not in member.borrowed_books or book.is_available():
+            raise ValueError("No active borrow record found for this member and book")
+        if return_date < record.borrow_date:
+            raise ValueError("Return date cannot be earlier than borrow date")
+
+        days = (return_date - record.borrow_date).days
+        fine = self.fine_policy.calculate(max(0, days - 7))
+
         member.return_book(book_id)
         book.return_book()
-
-        for record in self.records:
-
-            if (
-                record.member_id == member_id
-                and record.book_id == book_id
-                and record.return_date is None
-            ):
-                record.return_date = return_date
-
-                days = (return_date - record.borrow_date).days
-                late_days = max(0, days - 7)
-
-                return self.fine_policy.calculate(late_days)
-
-        raise ValueError("Borrow record not found")
+        record.return_date = return_date
+        return fine
