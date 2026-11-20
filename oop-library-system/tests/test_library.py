@@ -62,6 +62,21 @@ class TestLibrary(unittest.TestCase):
         with self.assertRaises(KeyError):
             self.library.borrow_book("M1","X",date.today())
 
+    def test_return_requires_active_record_before_state_change(self):
+        self.library.borrow_book("M1", "1", date(2026, 1, 1))
+        self.library.records.clear()
+        with self.assertRaisesRegex(ValueError, "No active borrow record"):
+            self.library.return_book("M1", "1", date(2026, 1, 2))
+        self.assertFalse(self.library.books["1"].is_available())
+        self.assertIn("1", self.library.members["M1"].borrowed_books)
+
+    def test_return_date_before_borrow_is_rejected_without_mutation(self):
+        self.library.borrow_book("M1", "1", date(2026, 1, 10))
+        with self.assertRaisesRegex(ValueError, "earlier than borrow date"):
+            self.library.return_book("M1", "1", date(2026, 1, 9))
+        self.assertFalse(self.library.books["1"].is_available())
+        self.assertIsNone(self.library.records[0].return_date)
+
     def test_return_not_borrowed(self):
 
         with self.assertRaises(ValueError):
